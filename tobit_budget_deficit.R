@@ -3,8 +3,6 @@ library(VGAM)
 
 ###Load data
 data = data.table(read.csv("./data/budget_deficit_data.csv"))
-#Set lower bound for Tobit model
-LOWER_BOUND <- 0
 
 #Count columns
 ncol(data)
@@ -18,6 +16,8 @@ deficit_data = subset(data, select=c("DEFICIT_M", "BoP", "GOV_DEBT", "IMF_FINANC
 #Scaling data
 deficit_data$BoP <- deficit_data$BoP*(-1)
 deficit_data$TAX_REVENUE <- deficit_data$TAX_REVENUE/1000
+#Set left bound for Tobit model
+LOWER_BOUND <- max(deficit_data$DEFICIT_M)
 
 model = vglm(DEFICIT_M ~ BoP + GOV_DEBT + IMF_FINANCING + TAX_REVENUE, tobit(Lower = LOWER_BOUND), data = deficit_data)
 summary(model)
@@ -29,4 +29,7 @@ beta = allPar[!names(allPar) %in% c("sigma")]
 sigma = allPar["sigma"]
 xBeta = crossprod(xValues, beta)
 zLeft = (-LOWER_BOUND + xBeta)/sigma
+## MARGINAL EFFECT ON DENSITY
 beta[!names(beta) %in% c("(Intercept)")] * (pnorm(zLeft))
+## MARGINAL EFFECT ON PROBABILITY
+- beta[!names(beta) %in% c("(Intercept)")] / sigma * (dnorm(zLeft))
